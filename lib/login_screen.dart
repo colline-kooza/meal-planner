@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'meal_list_screen.dart'; // Import home screen for navigation
+import 'home_screen.dart';
+import 'app_state_manager.dart';
 
 // This is the login/register screen
 class LoginScreen extends StatefulWidget {
@@ -14,9 +15,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Variable to track if user wants to login or register
   bool isLoginMode = true;
+  final AppStateManager _stateManager = AppStateManager();
 
   // Function to handle login
-  void handleLogin() {
+  void handleLogin() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
 
@@ -28,8 +30,9 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // TODO: Add real login logic here (Firebase, API, etc.)
-    print('Login: $email');
+    // Save login state
+    await _stateManager.setLoggedIn(true);
+    await _stateManager.setUserEmail(email);
 
     // Navigate to home screen after successful login
     Navigator.pushReplacement(
@@ -57,9 +60,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
-
-    // TODO: Add real registration logic here (Firebase, API, etc.)
-    print('Register: $email');
 
     // Show success message and switch to login mode
     ScaffoldMessenger.of(

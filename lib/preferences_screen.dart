@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_state_manager.dart';
 
 class PreferencesScreen extends StatefulWidget {
   @override
@@ -6,9 +7,11 @@ class PreferencesScreen extends StatefulWidget {
 }
 
 class _PreferencesScreenState extends State<PreferencesScreen> {
-  String selectedDiet = 'Vegetarian';
+  final AppStateManager _stateManager = AppStateManager();
+  String selectedDiet = 'None';
   String allergies = '';
   double weeklyBudget = 100.0;
+  bool _isLoading = true;
 
   final List<Map<String, dynamic>> dietOptions = [
     {'name': 'None', 'icon': Icons.dining_outlined},
@@ -21,7 +24,48 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    await _stateManager.init();
+    setState(() {
+      selectedDiet = _stateManager.getDietaryPreference();
+      allergies = _stateManager.getAllergies();
+      weeklyBudget = _stateManager.getWeeklyBudget();
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _savePreferences() async {
+    await _stateManager.saveDietaryPreference(selectedDiet);
+    await _stateManager.saveAllergies(allergies);
+    await _stateManager.saveWeeklyBudget(weeklyBudget);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Preferences saved successfully!'),
+        backgroundColor: Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+    Navigator.pop(context, true);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Color(0xFFF8F9FA),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF4CAF50)),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -181,6 +225,10 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                       onChanged: (value) {
                         allergies = value;
                       },
+                      controller: TextEditingController(text: allergies)
+                        ..selection = TextSelection.fromPosition(
+                          TextPosition(offset: allergies.length),
+                        ),
                       maxLines: 3,
                       decoration: InputDecoration(
                         hintText: 'e.g., Nuts, Shellfish, Soy, Dairy',
@@ -260,6 +308,17 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                             onChanged: (value) {
                               weeklyBudget = double.tryParse(value) ?? 100.0;
                             },
+                            controller:
+                                TextEditingController(
+                                    text: weeklyBudget.toStringAsFixed(0),
+                                  )
+                                  ..selection = TextSelection.fromPosition(
+                                    TextPosition(
+                                      offset: weeklyBudget
+                                          .toStringAsFixed(0)
+                                          .length,
+                                    ),
+                                  ),
                             decoration: InputDecoration(
                               hintText: '100.00',
                               border: InputBorder.none,
@@ -308,19 +367,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Preferences saved successfully!'),
-                        backgroundColor: Color(0xFF4CAF50),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    );
-                    Navigator.pop(context);
-                  },
+                  onPressed: _savePreferences,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF4CAF50),
                     shape: RoundedRectangleBorder(
